@@ -1,18 +1,11 @@
 const loader=document.getElementById("loader");
 window.addEventListener("load",()=>setTimeout(()=>loader.style.opacity="0",500));
 setTimeout(()=>loader.remove(),1300);
-
-
-
 const intro = document.getElementById("introScreen");
 const envelope = document.getElementById("envelope");
-
 const music = document.getElementById("bgMusic");
 const musicBtn = document.getElementById("musicBtn");
-
 let started = false;
-
-
 /* =========================
    MAGICAL ENVELOPE
    ========================= */
@@ -135,17 +128,43 @@ function tryMusic(){
 musicBtn.addEventListener("click", () => {
 
   if (music.paused) {
-
     music.play();
-
   } else {
-
     music.pause();
-
   }
 
 });
 
+
+/* Stop background music when her song starts */
+
+const herSong = document.querySelector(".song-area audio");
+
+if (herSong) {
+
+  herSong.addEventListener("play", () => {
+
+     // Remember that the background music was playing
+    if (!music.paused) {
+      music.pause();
+      music.dataset.wasPlaying = "true";
+    }
+
+  });
+  herSong.addEventListener("pause", () => {
+
+    // Resume background music when her song is paused
+    if (music.dataset.wasPlaying === "true") {
+
+      music.play().catch(() => {});
+
+      music.dataset.wasPlaying = "false";
+
+    }
+
+  });
+
+}
 
 music.addEventListener("play", () => {
 
@@ -368,8 +387,10 @@ let currentMemory = 0;
 /* Open a memory */
 function openMemory(index) {
 
+  if (!allMemoryImages.length) return;
+
   currentMemory = index;
-  
+
   lightboxImg.src = allMemoryImages[currentMemory].src;
 
   lightbox.classList.add("open");
@@ -392,19 +413,79 @@ function closeMemory() {
 /* Click images */
 allMemoryImages.forEach((img, index) => {
 
-  img.addEventListener("click", () => {
-    openMemory(index);
-  });
+let clickTimer = null;
+let lastTap = 0;
+
+function triggerLike() {
 
 
-  /* Double click = heart */
-  img.addEventListener("dblclick", () => {
+createBigHeart(img);
 
-    createBigHeart(img);
+// Find the memory post containing this image
+const post = img.closest(".post");
 
-  });
+if (!post) return;
+
+const heart = post.querySelector(".post-actions span");
+
+if (!heart) return;
+
+heart.textContent = "♥";
+heart.style.color = "#e84e83";
+
+
+}
+
+// Desktop single click / double click
+img.addEventListener("click", () => {
+
+
+clearTimeout(clickTimer);
+
+clickTimer = setTimeout(() => {
+
+  openMemory(index);
+
+}, 220);
+
 
 });
+
+img.addEventListener("dblclick", (e) => {
+
+
+e.preventDefault();
+
+clearTimeout(clickTimer);
+
+triggerLike();
+
+
+});
+
+// Mobile double-tap
+img.addEventListener("touchend", (e) => {
+
+
+const now = Date.now();
+
+if (now - lastTap < 350) {
+
+  e.preventDefault();
+
+  clearTimeout(clickTimer);
+
+  triggerLike();
+
+}
+
+lastTap = now;
+
+
+}, { passive: false });
+
+});
+
 
 
 /* Close button */
